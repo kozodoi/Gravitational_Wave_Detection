@@ -25,6 +25,8 @@ def get_model(CFG, pretrained = None):
         model.classifier = nn.Linear(model.classifier.in_features, CFG['num_classes'] - 1)
     elif 'vit' in CFG['backbone'] or 'swin' in CFG['backbone']:
         model.head = nn.Linear(model.head.in_features, CFG['num_classes'] - 1)
+    elif 'nfnet' in CFG['backbone']:
+        model.head.fc = nn.Linear(model.head.fc.in_features, CFG['num_classes'] - 1)
     else:
         model.fc = nn.Linear(model.fc.in_features, CFG['num_classes'] - 1)
         
