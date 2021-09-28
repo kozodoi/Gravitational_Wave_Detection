@@ -13,8 +13,11 @@ import librosa
 import numpy as np
 import pandas as pd
 
+from scipy import signal, optimize
+from timm.models.layers.conv2d_same import conv2d_same
+
 from utilities import *
-from augmentations import get_augs
+from augmentations import get_augs, CWT
 
 
 class ImageData(Dataset):
@@ -36,6 +39,8 @@ class ImageData(Dataset):
         self.transform      = transform
         self.channels       = channels
         self.wave_transform = CQT1992v2(**wave_transform_params)
+        self.cwt            = CWT(fmin = 20, fmax = 500, hop_length = 8, dj = 0.125/8)
+        self.bandpass       = signal.butter(4, [35, 500], btype = "bandpass", output = "sos", fs = 2048)
         
     def __len__(self):
         return len(self.df)
@@ -87,6 +92,27 @@ class ImageData(Dataset):
             image = torch.stack((w0, w1, w2), dim = 0)
             image = torch.transpose(image, 0, 2)
         return image
+    
+    def apply_cwt_transform(self, waves, channels):
+        
+        if channels == 3:
+
+            # tuckey
+            waves = waves / np.max(waves)
+            waves *= signal.tukey(4096, 0.2)
+
+            # bandpass
+            normalization = np.sqrt((500 - 35) / (2048 / 2))
+            waves         = signal.sosfiltfilt(self.bandpass, waves) / normalization
+
+            # CWT
+            image = torch.tensor(waves, dtype = torch.float32).view(1, 3, 4096)
+            image = self.cwt(image)
+            image = torch.transpose(image[0], 0, 2)
+            image = torch.transpose(image,    0, 1)
+            image = image / torch.max(image)
+            
+        return image
         
 
     def __getitem__(self, idx):
@@ -103,6 +129,9 @@ class ImageData(Dataset):
             image = image.squeeze().numpy()      
         elif self.transformation == 's':
             image = self.apply_spec_transform(image, self.channels)
+            image = image.squeeze().numpy()   
+        elif self.transformation == 'cwt':
+            image = self.apply_cwt_transform(image, self.channels)
             image = image.squeeze().numpy()   
                 
         # augmentations
@@ -199,3 +228,6 @@ def get_loaders(df_train, df_valid, CFG, accelerator, labeled = True, silent = F
         accelerator.print('-' * 55)
     
     return train_loader, valid_loader
+
+
+
