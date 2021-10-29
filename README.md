@@ -1,6 +1,6 @@
 # Gravitational Wave Detection
 
-Solution to the [G2Net Gravitational Wave Detection](https://www.kaggle.com/c/seti-breakthrough-listen) Kaggle competition on classifying gravitational wave signals from binary black hole collisions
+Solution to the [G2Net Gravitational Wave Detection](https://www.kaggle.com/c/seti-breakthrough-listen) Kaggle competition on classifying gravitational wave signals from black hole collisions.
 
 ![sample](https://i.postimg.cc/FzPd8TTJ/black-hole.jpg)
 
